@@ -9,7 +9,7 @@ const { report } = require("../services/error");
 
 module.exports = (app) => {
   app.get("/auth", async (req, res) => {
-    console.log("GET REQUEST @ /letters");
+    console.log("GET REQUEST @ /auth");
     const { username, password } = JSON.parse(req.query.user);
 
     const query = await User.findOne({ username });
@@ -37,11 +37,10 @@ module.exports = (app) => {
     };
 
     // Compare query password with our hash
-    if (query.length != 1) {
-      // Throw error
-      report(res, 401, "Invalid credentials");
+    if (query) {
+      bcrypt.compHash(password, query.h_password, hashCallback);
     } else {
-      bcrypt.compHash(password, query[0].h_password, hashCallback);
+      report(res, 401, "Invalid credentials");
     }
   });
 
