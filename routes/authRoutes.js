@@ -5,15 +5,18 @@ const { v4: uuidv4 } = require("uuid");
 const requireLogin = require("../middlewares/requireLogin");
 const bcrypt = require("../services/bcrypt");
 const jwt = require("jsonwebtoken");
+const { report } = require("../services/error");
 
 module.exports = (app) => {
   app.get("/auth", async (req, res) => {
     console.log("GET REQUEST @ /letters");
     const { username, password } = JSON.parse(req.query.user);
+
+    const query = await User.findOne({ username });
+
     // Encrypt pasword
     const hashCallback = (err, comp) => {
       if (err === undefined) {
-        // all is good
         (async () => {
           if (comp) {
             // Valid Password, Sign jwt
@@ -24,21 +27,19 @@ module.exports = (app) => {
 
             res.json({ token });
           } else {
-            res.sendStatus(401);
+            report(res, 401, "Invalid credentials", err);
           }
         })();
       } else {
         // Something went wrong
-        console.log("There has been an error with bcrypt:\n\n", err);
-        res.status(500);
-        res.send("Something went wrong");
+        report(res, 500, "There has been an error with bcrypt", err);
       }
     };
 
-    const query = await User.find({ username });
     // Compare query password with our hash
     if (query.length != 1) {
       // Throw error
+      report(res, 401, "Invalid credentials");
     } else {
       bcrypt.compHash(password, query[0].h_password, hashCallback);
     }
@@ -46,10 +47,11 @@ module.exports = (app) => {
 
   app.post("/auth", async (req, res) => {
     const { username, password } = req.body;
-    console.log(req.body);
+
+    const query = await User.findOne({ username });
+
     const hashCallback = (err, h_password) => {
       if (err === undefined) {
-        // all is good
         (async () => {
           const payload = {
             _id: uuidv4(),
@@ -61,19 +63,27 @@ module.exports = (app) => {
           const newUser = new User(payload);
 
           newUser.save((err) => {
-            if (err)
-              console.log("An error occured with mongo/mongoose\n\n", err);
+            if (err) {
+              report(
+                res,
+                500,
+                "An error occured while saving to the database",
+                err
+              );
+            }
           });
           res.status(200);
           res.send();
         })();
       } else {
-        // Something went wrong
-        console.log("There has been an error with bcrypt:\n\n", err);
-        res.status(500);
-        res.send("Something went wrong");
+        report(res, 500, "There has been an error with bcrypt", err);
       }
     };
-    bcrypt.hashPass(password, hashCallback);
+
+    if (query.length < 1) {
+      bcrypt.hashPass(password, hashCallback);
+    } else {
+      report(res, 422, "Username unavailable");
+    }
   });
 };
