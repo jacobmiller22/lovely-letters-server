@@ -20,8 +20,6 @@ module.exports = (app) => {
         (async () => {
           if (comp) {
             // Valid Password, Sign jwt
-            console.log("Valid");
-            // Send currUser details
             const user = { username };
             const token = jwt.sign({ user }, keys.jwtSecret);
 
@@ -79,10 +77,10 @@ module.exports = (app) => {
       }
     };
 
-    if (query.length < 1) {
-      bcrypt.hashPass(password, hashCallback);
-    } else {
+    if (query) {
       report(res, 422, "Username unavailable");
+    } else {
+      bcrypt.hashPass(password, hashCallback);
     }
   });
 };

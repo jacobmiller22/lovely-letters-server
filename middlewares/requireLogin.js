@@ -12,7 +12,7 @@ module.exports = async (req, res, next) => {
     req.token = bearerToken;
 
     // Verify token
-    jwt.verify(req.token, keys.jwtSecret, (err, data) => {
+    await jwt.verify(req.token, keys.jwtSecret, (err, data) => {
       if (err) {
         console.log(err);
         res.sendStatus(403);
@@ -21,6 +21,7 @@ module.exports = async (req, res, next) => {
       }
     });
   } else {
+    console.log(bearerHeader);
     res.sendStatus(403);
   }
 };
