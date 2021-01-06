@@ -16,7 +16,7 @@ app.use(cors());
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "\n\nMongoDB Connect Error\n\n"));
 
-require("./routes/userRoutes")(app);
+require("./routes/letterRoutes")(app);
 require("./routes/authRoutes")(app);
 
 const PORT = process.env.PORT || 5000;
