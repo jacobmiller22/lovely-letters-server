@@ -1,15 +1,28 @@
 const mongoose = require("mongoose");
 const Letter = mongoose.model("letters");
+const User = mongoose.model("users");
 const { v4: uuidv4 } = require("uuid");
 const requireLogin = require("../middlewares/requireLogin");
 const { report } = require("../services/error");
 
 module.exports = (app) => {
-  app.get("/letters", requireLogin, async (req, res) => {
+  app.get("/letters", requireLogin, async (req, res, next) => {
     const q = JSON.parse(req.query.q);
 
     const { where, order } = q;
-    const letters = await Letter.find(where);
+
+    console.log(q);
+    // h_password
+    const receiver = await User.findOne({ username: where._receiver });
+    console.log(receiver);
+    const letters = await Letter.find({ _receiver: receiver._id })
+      .populate("_receiver _sender")
+      .select("title content _sender _receiver dateSent dateRead isDraft")
+      .catch((err) => {
+        report(res, 400, "Error with query", err);
+      });
+
+    console.log(letters);
 
     if (letters === undefined) {
       report(res, 204, "There are no letters");
@@ -17,6 +30,7 @@ module.exports = (app) => {
 
     const params = order.split(" ");
     const field = params[0];
+
     const type = params[1];
 
     const comp = (a, b) => {
@@ -44,7 +58,8 @@ module.exports = (app) => {
             }
           default:
             // Undefined, null, function, object, or otherwise
-            report(res, 500, "Invalid field record");
+            report(res, 500, "Invalid field record", x);
+            next();
         }
       };
 
@@ -63,16 +78,19 @@ module.exports = (app) => {
   });
 
   app.post("/letters", requireLogin, async (req, res) => {
-    const { title, receiver, content, sender } = req.body;
+    const { title, receiver, content, sender, isDraft } = req.body;
 
+    const senderUser = await User.findOne({ username: sender });
+    const receiverUser = await User.findOne({ username: receiver });
+    console.log(senderUser);
     const payload = {
       _id: uuidv4(),
       title,
-      date: new Date(),
-      sender,
-      receiver,
+      dateSent: Date.now(),
+      _sender: senderUser._id,
+      _receiver: receiverUser._id,
       content,
-      isDraft: false,
+      isDraft,
     };
 
     const newLetter = new Letter(payload);

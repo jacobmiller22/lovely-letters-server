@@ -5,11 +5,14 @@
  * @param {*} stacktrace - The stacktrace of the error
  */
 const report = (res, code, message, stacktrace) => {
-  res.status(code ? code : -1);
+  console.log("ERROR:\n\n");
+  console.log(code, message, stacktrace);
   res.json({
+    code: code ? code : -1,
     text: message,
     stacktrace,
   });
+  return;
 };
 
 module.exports = {

@@ -6,6 +6,7 @@ const requireLogin = require("../middlewares/requireLogin");
 const bcrypt = require("../services/bcrypt");
 const jwt = require("jsonwebtoken");
 const { report } = require("../services/error");
+const { emailRe } = require("../services/regex");
 
 module.exports = (app) => {
   app.get("/auth", async (req, res) => {
@@ -21,7 +22,9 @@ module.exports = (app) => {
           if (comp) {
             // Valid Password, Sign jwt
             const user = { username };
-            const token = jwt.sign({ user }, keys.jwtSecret);
+            const token = jwt.sign({ user }, keys.jwtSecret, {
+              expiresIn: "12h",
+            });
 
             res.json({ token });
           } else {
@@ -82,5 +85,35 @@ module.exports = (app) => {
     } else {
       bcrypt.hashPass(password, hashCallback);
     }
+  });
+
+  app.post("/auth/reset", async (req, res) => {
+    const { username_email } = req.body;
+
+    if (emailRe.test(email)) {
+      var email = username_email;
+    } else {
+      var username = username_email;
+    }
+
+    User.findOne({ email }, (err, user) => {
+      if (err || !user) {
+        report(res, 400, "User does not exist", err);
+      }
+
+      const token = jwt.sign({ _id: user._id }, keys.passResetSecret, {
+        expiresIn: "20m",
+      });
+
+      const emailData = {
+        from: "noreply@jacobmiller22.com",
+        to: email,
+        subject: "Account Verification",
+        html: `<h2>Click the the link to reset password</h2>
+        <p>${keys.clientUrl}/auth/reset/${token}</p>`,
+      };
+
+      return User.updateOne({ resetLink: token });
+    });
   });
 };

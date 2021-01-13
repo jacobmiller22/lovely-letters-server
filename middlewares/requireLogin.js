@@ -21,7 +21,10 @@ module.exports = async (req, res, next) => {
       }
     });
   } else {
-    console.log(bearerHeader);
+    console.log("bearerheader", bearerHeader);
+    if (bearerHeader === undefined) {
+      res.sendStatus(401);
+    }
     res.sendStatus(403);
   }
 };
