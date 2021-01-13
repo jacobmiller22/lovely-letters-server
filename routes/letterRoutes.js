@@ -14,9 +14,9 @@ module.exports = (app) => {
     console.log(q);
     // h_password
     const receiver = await User.findOne({ username: where._receiver });
-    console.log(receiver);
+
     const letters = await Letter.find({ _receiver: receiver._id })
-      .populate("_receiver _sender")
+      .populate("_receiver _sender", "-h_password -_id -__v -contacts")
       .select("title content _sender _receiver dateSent dateRead isDraft")
       .catch((err) => {
         report(res, 400, "Error with query", err);
