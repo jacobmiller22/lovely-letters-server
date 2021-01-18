@@ -9,15 +9,48 @@ module.exports = (app) => {
   app.get("/letters", requireLogin, async (req, res, next) => {
     const q = JSON.parse(req.query.q);
 
-    const { where, order } = q;
+    const { where, order, select } = q;
 
+    const createSelect = (select) => {
+      let sel = "";
+      select.forEach((ele) => {
+        sel += " " + ele;
+      });
+      return sel.trim();
+    };
     console.log(q);
-    // h_password
-    const receiver = await User.findOne({ username: where._receiver });
 
-    const letters = await Letter.find({ _receiver: receiver._id })
+    if (where._receiver) {
+      var name = "_receiver";
+      var poi_user = where._receiver;
+    } else if (where._sender) {
+      var name = "_sender";
+      var poi_user = where._sender;
+    } else {
+      var name = "";
+      var poi_user = "";
+    }
+
+    const poi = await User.findOne({ username: poi_user }).select("_id");
+
+    const showDrafts = () => {
+      if (req.user.username === poi_user && name === "_sender") {
+        // Requesting about self, allow unpublished letters
+        if (where.isDraft) {
+          return { isDraft: true };
+        }
+        return {};
+      }
+      return { isDraft: false };
+    };
+
+    const letters = await Letter.find({
+      ...where,
+      [name]: poi._id,
+      ...showDrafts(),
+    })
       .populate("_receiver _sender", "-h_password -_id -__v -contacts")
-      .select("title content _sender _receiver dateSent dateRead isDraft")
+      .select(createSelect(select))
       .catch((err) => {
         report(res, 400, "Error with query", err);
       });

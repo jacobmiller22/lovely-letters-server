@@ -7,8 +7,8 @@
 const report = (res, code, message, stacktrace) => {
   console.log("ERROR:\n\n");
   console.log(code, message, stacktrace);
+  res.status(code ? code : -1);
   res.json({
-    code: code ? code : -1,
     text: message,
     stacktrace,
   });

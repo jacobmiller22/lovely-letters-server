@@ -7,6 +7,10 @@ const bcrypt = require("../services/bcrypt");
 const jwt = require("jsonwebtoken");
 const { report } = require("../services/error");
 const { emailRe } = require("../services/regex");
+const Mailer = require("../services/email/Mailer");
+const Mailer2 = require("../services/email/Mailer2");
+// const resetTemplate = require("../services/email/resetTemplate");
+const { resetLinkId } = require("../services/email/templateIds");
 
 module.exports = (app) => {
   app.get("/auth", async (req, res) => {
@@ -90,30 +94,50 @@ module.exports = (app) => {
   app.post("/auth/reset", async (req, res) => {
     const { username_email } = req.body;
 
-    if (emailRe.test(email)) {
-      var email = username_email;
+    if (emailRe.test(username_email)) {
+      var email = { email: username_email };
     } else {
       var username = username_email;
     }
 
-    User.findOne({ email }, (err, user) => {
-      if (err || !user) {
+    const user = await User.findOne({ ...email }).catch((err) => {
+      if (err) {
         report(res, 400, "User does not exist", err);
       }
-
-      const token = jwt.sign({ _id: user._id }, keys.passResetSecret, {
-        expiresIn: "20m",
-      });
-
-      const emailData = {
-        from: "noreply@jacobmiller22.com",
-        to: email,
-        subject: "Account Verification",
-        html: `<h2>Click the the link to reset password</h2>
-        <p>${keys.clientUrl}/auth/reset/${token}</p>`,
-      };
-
-      return User.updateOne({ resetLink: token });
     });
+
+    if (!user) {
+      report(res, 400, "User does not exist", err);
+    }
+
+    const token = jwt.sign({ _id: user._id }, keys.passResetSecret, {
+      expiresIn: "20m",
+    });
+
+    User.updateOne({ _id: user._id }, { resetLink: token });
+
+    // Grab reset link
+
+    // const emailData = await User.findOne({ email });
+    // Send mail
+
+    const templateData = {
+      firstName: "Jacob",
+      resetLink: "",
+    };
+
+    const options = {
+      recipients: [{ email: "jacobmiller22@vt.edu" }],
+      subject: "Reset Password",
+      template_id: resetLinkId,
+      dynamic_template_data: templateData,
+    };
+
+    const mailer2 = new Mailer2(options);
+    mailer2.send().catch((err) => {
+      console.log(err);
+    });
+    res.status(202);
+    res.send();
   });
 };

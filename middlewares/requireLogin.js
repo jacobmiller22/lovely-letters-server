@@ -17,6 +17,8 @@ module.exports = async (req, res, next) => {
         console.log(err);
         res.sendStatus(403);
       } else {
+        req.user = data.user;
+
         next();
       }
     });
