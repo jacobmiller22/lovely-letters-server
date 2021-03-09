@@ -18,7 +18,6 @@ module.exports = (app) => {
       });
       return sel.trim();
     };
-    console.log(q);
 
     if (where._receiver) {
       var name = "_receiver";
@@ -55,10 +54,16 @@ module.exports = (app) => {
         report(res, 400, "Error with query", err);
       });
 
-    console.log(letters);
-
     if (letters === undefined) {
       report(res, 204, "There are no letters");
+    }
+
+    if (!order) {
+      console.log("--------------------");
+      console.log(letters);
+      res.status(200);
+      res.send(letters.slice());
+      return;
     }
 
     const params = order.split(" ");
@@ -110,7 +115,25 @@ module.exports = (app) => {
     res.send(letters.slice().sort(comp));
   });
 
-  app.post("/letters", requireLogin, async (req, res) => {
+  app.get("/letter", requireLogin, async (req, res) => {
+    const q = req.query;
+    const { _id } = q;
+
+    try {
+      var letter = await Letter.findById(_id).populate(
+        "_receiver _sender",
+        "-h_password -_id -__v -contacts"
+      );
+    } catch (err) {
+      res.status(403);
+      res.send();
+    }
+
+    res.status(200);
+    res.json(letter);
+  });
+
+  app.post("/letter", requireLogin, async (req, res) => {
     const { title, receiver, content, sender, isDraft } = req.body;
 
     const senderUser = await User.findOne({ username: sender });
@@ -131,6 +154,21 @@ module.exports = (app) => {
     newLetter.save((err) => {
       if (err) console.log("An error occured\n\n", err);
     });
+    res.status(200);
+    res.send();
+  });
+
+  app.delete("/letter", requireLogin, async (req, res) => {
+    const q = req.query;
+    const { _id } = q;
+
+    try {
+      var letter = await Letter.findByIdAndDelete(_id);
+    } catch (err) {
+      res.status(403);
+      res.send();
+    }
+
     res.status(200);
     res.send();
   });

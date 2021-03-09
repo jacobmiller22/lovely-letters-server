@@ -23,10 +23,11 @@ module.exports = async (req, res, next) => {
       }
     });
   } else {
-    console.log("bearerheader", bearerHeader);
     if (bearerHeader === undefined) {
-      res.sendStatus(401);
+      res.status(401);
+      res.send();
     }
-    res.sendStatus(403);
+    res.status(403);
+    res.send();
   }
 };
