@@ -5,6 +5,11 @@ const { v4: uuidv4 } = require("uuid");
 const requireLogin = require("../middlewares/requireLogin");
 const { report } = require("../services/error");
 
+mongoose.set("useNewUrlParser", true);
+mongoose.set("useFindAndModify", false);
+mongoose.set("useCreateIndex", true);
+mongoose.set("useUnifiedTopology", true);
+
 module.exports = (app) => {
   app.get("/letters", requireLogin, async (req, res, next) => {
     const q = JSON.parse(req.query.q);
