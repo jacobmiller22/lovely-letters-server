@@ -55,7 +55,7 @@ module.exports = (app) => {
   });
 
   app.post("/auth", async (req, res) => {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
 
     const query = await User.findOne({ username });
 
@@ -67,17 +67,19 @@ module.exports = (app) => {
       const payload = {
         _id: uuidv4(),
         username,
+        email,
         h_password,
         dateCreated: new Date(),
         contacts: [],
       };
       const newUser = new User(payload);
-
-      newUser.save((err) => {
-        if (err) {
-          report(res, 500);
-        }
-      });
+      (async () => {
+        await newUser.save((err) => {
+          if (err) {
+            report(res, 500);
+          }
+        });
+      })();
       report(res, 200);
       return;
     };

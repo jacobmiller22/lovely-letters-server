@@ -24,8 +24,7 @@ module.exports = async (req, res, next) => {
     });
   } else {
     if (bearerHeader === undefined) {
-      res.status(401);
-      res.send();
+      res.status(401).send();
     }
     res.status(403);
     res.send();
