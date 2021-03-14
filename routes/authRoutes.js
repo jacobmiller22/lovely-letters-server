@@ -172,4 +172,19 @@ module.exports = (app) => {
     bcrypt.hashPass(new_password, hashCallback);
     report(res, 200);
   });
+
+  app.get("/auth/username_availability", async (req, res) => {
+    if (!req.query) {
+      return;
+    }
+    const { username } = req.query.trim();
+
+    if (username === "") {
+      res.status(200).send(false);
+      return;
+    }
+
+    const result = await User.findOne({ username });
+    res.status(200).send(result ? !!result.username : false);
+  });
 };
